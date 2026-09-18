@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { NextResponse } from 'next/server';
 import { ApiErrorResponse, BufferErrorNonRec, NetworkError, NonRecoverableError, UnauthorizedError } from '@/contracts/errors';
 import { COOKIE_KEYS } from '@/constants';
@@ -13,18 +14,20 @@ type TokenResponse = {
     expires_in: number;
 };
 
+type RefreshResult =
+    | { success: true; accessToken: string }
+    | { success: false; errorMessage: string };
+
 /**
  * Attempts to refresh the access token using the refresh token.
  * Updates cookies with new tokens on success.
- *
- * @returns {Promise<string | null>} - The new access token, or null if refresh failed.
  */
-async function refreshAccessToken(): Promise<string | null> {
+async function refreshAccessToken(): Promise<RefreshResult> {
     const cookieStore = await cookies();
     const refreshToken = cookieStore.get(COOKIE_KEYS.REFRESH_TOKEN)?.value;
 
     if (!refreshToken) {
-        return null;
+        return { success: false, errorMessage: 'No refresh token' };
     }
 
     try {
@@ -38,11 +41,14 @@ async function refreshAccessToken(): Promise<string | null> {
             }),
         });
 
-        if (response.status != 200) {
-            return null;
+        const data = await response.json();
+
+        if (response.status !== 200) {
+            const errorMessage = data.error_description || data.error || 'Token refresh failed';
+            return { success: false, errorMessage };
         }
 
-        const tokens: TokenResponse = await response.json();
+        const tokens: TokenResponse = data;
 
         cookieStore.set({
             name: COOKIE_KEYS.ACCESS_TOKEN,
@@ -63,9 +69,10 @@ async function refreshAccessToken(): Promise<string | null> {
             sameSite: 'lax',
         });
 
-        return tokens.access_token;
-    } catch {
-        return null;
+        return { success: true, accessToken: tokens.access_token };
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Network error during refresh';
+        return { success: false, errorMessage };
     }
 }
 
@@ -123,19 +130,25 @@ async function executeBufferQuery<T>(query: string): Promise<T | Error | Unautho
 
 /**
  * Attempts to refresh the token and retry the query.
- * Clears auth cookies if refresh fails.
+ * Clears auth cookies and redirects to "/" if refresh fails or retry still unauthorized.
  *
  * @param {string} query - The GraphQL query to retry
- * @returns {Promise<T | Error | UnauthorizedError | BufferErrorNonRec | NetworkError>} The retry result or UnauthorizedError
+ * @returns {Promise<T | Error | BufferErrorNonRec | NetworkError>} The retry result
  */
-async function refreshAndRetry<T>(query: string): Promise<T | Error | UnauthorizedError | BufferErrorNonRec | NetworkError> {
-    const newAccessToken = await refreshAccessToken();
-    if (!newAccessToken) {
+async function refreshAndRetry<T>(query: string): Promise<T | Error | BufferErrorNonRec | NetworkError> {
+    const refreshResult = await refreshAccessToken();
+    if (!refreshResult.success) {
         await clearAuthCookies();
-        return new UnauthorizedError('Token refresh failed');
+        redirect('/');
     }
 
-    return await executeBufferQuery<T>(query);
+    const result = await executeBufferQuery<T>(query);
+    if (result instanceof UnauthorizedError) {
+        await clearAuthCookies();
+        redirect('/');
+    }
+
+    return result;
 }
 
 /**

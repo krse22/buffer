@@ -1,15 +1,15 @@
 'use client';
 
+import Link from 'next/link';
 import type { BufferChannel } from '@/contracts/channel';
 import { getPlatformInfo, PlatformIcon } from '@/utils/platform-icons';
 
 type ChannelListProps = {
   channels: BufferChannel[];
   selectedId: string | null;
-  onSelect: (channel: BufferChannel) => void;
 };
 
-export function ChannelList({ channels, selectedId, onSelect }: ChannelListProps) {
+export function ChannelList({ channels, selectedId }: ChannelListProps) {
   return (
     <div className="flex flex-col gap-1">
       {channels.map((channel) => {
@@ -18,9 +18,9 @@ export function ChannelList({ channels, selectedId, onSelect }: ChannelListProps
         const displayName = channel.displayName || channel.name;
 
         return (
-          <button
+          <Link
             key={channel.id}
-            onClick={() => onSelect(channel)}
+            href={`/channel/${channel.id}`}
             className={`
               flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors
               ${isSelected
@@ -42,7 +42,7 @@ export function ChannelList({ channels, selectedId, onSelect }: ChannelListProps
                 <span>{platformName}</span>
               </div>
             </div>
-          </button>
+          </Link>
         );
       })}
     </div>

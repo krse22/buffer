@@ -1,20 +1,25 @@
 'use client';
 
+import Link from 'next/link';
 import type { Post } from '@/contracts/post';
 import { Image, Video, FileText } from 'lucide-react';
 
 type PostPreviewCardProps = {
   post: Post;
+  channelId: string;
 };
 
-export function PostPreviewCard({ post }: PostPreviewCardProps) {
+export function PostPreviewCard({ post, channelId }: PostPreviewCardProps) {
   const wordCount = post.text ? post.text.trim().split(/\s+/).filter(Boolean).length : 0;
   const imageCount = post.assets.filter(a => a.type === 'image').length;
   const videoCount = post.assets.filter(a => a.type === 'video').length;
   const truncatedText = post.text?.length > 100 ? post.text.slice(0, 100) + '...' : post.text;
 
   return (
-    <div className="flex gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+    <Link
+      href={`/channel/${channelId}/posts/${post.id}`}
+      className="flex gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+    >
       {post.assets.length > 0 && (
         <div className="flex gap-1 flex-shrink-0">
           {post.assets.slice(0, 4).map((asset) => (
@@ -60,6 +65,6 @@ export function PostPreviewCard({ post }: PostPreviewCardProps) {
           )}
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

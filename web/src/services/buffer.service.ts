@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { BufferAccount } from "@/contracts/account";
 import { BufferChannel } from "@/contracts/channel";
-import { PostsConnection } from "@/contracts/post";
+import { Post, PostsConnection } from "@/contracts/post";
 import { BufferErrorNonRec, NetworkError, UnauthorizedError } from "@/contracts/errors";
 import { bufferApi } from "@/utils/api-handler";
 import { COOKIE_KEYS } from "@/constants";
@@ -139,4 +139,39 @@ export async function getBufferPosts(
   }
 
   return result.posts;
+}
+
+/**
+ * Fetches a single post from Buffer's GraphQL API.
+ */
+export async function getBufferPost(
+  postId: string
+): Promise<Post | Error | UnauthorizedError | BufferErrorNonRec | NetworkError> {
+  const query = `
+    query GetPost {
+      post(input: {
+        id: "${postId}"
+      }) {
+        id
+        text
+        dueAt
+        status
+        assets {
+          id
+          mimeType
+          source
+          thumbnail
+          type
+        }
+      }
+    }
+  `;
+
+  const result = await bufferApi<{ post: Post }>(query);
+
+  if (result instanceof Error) {
+    return result;
+  }
+
+  return result.post;
 }

@@ -1,80 +1,60 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import type { PostEdge, PageInfo } from '@/contracts/post';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import type { PostsConnection } from '@/contracts/post';
 import { PostPreviewCard } from './post-preview-card';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { PostPreviewListSkeleton } from './post-preview-skeleton';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 type PostPreviewListProps = {
   channelId: string;
 };
 
-export function PostPreviewList({ channelId }: PostPreviewListProps) {
-  const [posts, setPosts] = useState<PostEdge[]>([]);
-  const [pageInfo, setPageInfo] = useState<PageInfo | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [cursors, setCursors] = useState<string[]>([]);
+async function fetchPosts(channelId: string, after?: string): Promise<PostsConnection> {
+  const params = new URLSearchParams({ channelId });
+  if (after) params.set('after', after);
 
-  async function fetchPosts(after?: string) {
-    setLoading(true);
-    setError(null);
+  const response = await fetch(`/api/posts?${params}`);
+  const data = await response.json();
 
-    try {
-      const params = new URLSearchParams({ channelId });
-      if (after) params.set('after', after);
-
-      const response = await fetch(`/api/posts?${params}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error?.message || 'Failed to fetch posts');
-        return;
-      }
-
-      setPosts(data.edges);
-      setPageInfo(data.pageInfo);
-    } catch {
-      setError('Network error');
-    } finally {
-      setLoading(false);
-    }
+  if (!response.ok) {
+    throw new Error(data.error?.message || 'Failed to fetch posts');
   }
 
-  useEffect(() => {
-    setCursors([]);
-    fetchPosts();
-  }, [channelId]);
+  return data;
+}
+
+export function PostPreviewList({ channelId }: PostPreviewListProps) {
+  const [cursors, setCursors] = useState<string[]>([]);
+  const currentCursor = cursors[cursors.length - 1];
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['posts', channelId, currentCursor],
+    queryFn: () => fetchPosts(channelId, currentCursor),
+  });
 
   function handleNext() {
-    if (pageInfo?.endCursor) {
-      setCursors(prev => [...prev, pageInfo.endCursor!]);
-      fetchPosts(pageInfo.endCursor);
+    if (data?.pageInfo.endCursor) {
+      setCursors(prev => [...prev, data.pageInfo.endCursor!]);
     }
   }
 
   function handlePrev() {
-    const newCursors = [...cursors];
-    newCursors.pop();
-    setCursors(newCursors);
-    fetchPosts(newCursors[newCursors.length - 1]);
+    setCursors(prev => prev.slice(0, -1));
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-      </div>
-    );
+  if (isLoading) {
+    return <PostPreviewListSkeleton />;
   }
 
   if (error) {
     return (
-      <div className="text-center py-8 text-red-500 text-sm">{error}</div>
+      <div className="text-center py-8 text-red-500 text-sm">{error.message}</div>
     );
   }
 
-  if (posts.length === 0) {
+  if (!data || data.edges.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500 text-sm">No posts found</div>
     );
@@ -82,8 +62,8 @@ export function PostPreviewList({ channelId }: PostPreviewListProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      {posts.map((edge) => (
-        <PostPreviewCard key={edge.node.id} post={edge.node} />
+      {data.edges.map((edge) => (
+        <PostPreviewCard key={edge.node.id} post={edge.node} channelId={channelId} />
       ))}
 
       <div className="flex items-center justify-between mt-4">
@@ -98,7 +78,7 @@ export function PostPreviewList({ channelId }: PostPreviewListProps) {
 
         <button
           onClick={handleNext}
-          disabled={!pageInfo?.hasNextPage}
+          disabled={!data.pageInfo.hasNextPage}
           className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Next
