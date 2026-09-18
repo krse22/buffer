@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { BufferAccount } from "@/contracts/account";
 import { BufferChannel } from "@/contracts/channel";
+import { PostsConnection } from "@/contracts/post";
 import { BufferErrorNonRec, NetworkError, UnauthorizedError } from "@/contracts/errors";
 import { bufferApi } from "@/utils/api-handler";
 import { COOKIE_KEYS } from "@/constants";
@@ -71,4 +72,69 @@ export async function getBufferChannels(): Promise<BufferChannel[] | Error | Una
   }
 
   return result.channels;
+}
+
+/**
+ * Fetches posts for a channel from Buffer's GraphQL API.
+ * Uses the unified bufferApi which handles token refresh automatically.
+ *
+ * @param {string} channelId - The channel ID to fetch posts for.
+ * @param {string | undefined} after - Optional cursor for pagination.
+ * @returns {Promise<PostsConnection | Error | UnauthorizedError | BufferErrorNonRec | NetworkError>} Posts connection or an error.
+ */
+export async function getBufferPosts(
+  channelId: string,
+  after?: string
+): Promise<PostsConnection | Error | UnauthorizedError | BufferErrorNonRec | NetworkError> {
+  const cookieStore = await cookies();
+  const organizationId = cookieStore.get(COOKIE_KEYS.ORGANIZATION_ID)?.value;
+
+  const afterClause = after ? `after: "${after}",` : '';
+
+  const query = `
+    query GetPosts {
+      posts(input: {
+        organizationId: "${organizationId}"
+        filter: {
+          channelIds: ["${channelId}"]
+        }
+        sort: {
+          field: "createdAt"
+          direction: "desc"
+        }
+        ${afterClause}
+        first: 3
+      }) {
+        edges {
+          cursor
+          node {
+            id
+            dueAt
+            status
+            asset {
+              id
+              mimeType
+              source
+              thumbnail
+              type
+            }
+          }
+        }
+        pageInfo {
+          endCursor
+          hasNextPage
+          hasPreviousPage
+          startCursor
+        }
+      }
+    }
+  `;
+
+  const result = await bufferApi<{ posts: PostsConnection }>(query);
+
+  if (result instanceof Error) {
+    return result;
+  }
+
+  return result.posts;
 }
