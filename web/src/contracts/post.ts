@@ -19,9 +19,10 @@ export type Asset = {
  */
 export type Post = {
   id: string;
+  text: string;
   dueAt: string;
   status: string;
-  asset: Asset | null;
+  assets: Asset[];
 };
 
 /**

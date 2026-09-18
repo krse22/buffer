@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { BufferChannel } from '@/contracts/channel';
 import { Sidebar } from '@/components/sidebar';
+import { PostPreviewList } from '@/components/previews/post-preview-list';
 
 type AuthenticatedLayoutProps = {
   children: React.ReactNode;
@@ -38,6 +39,8 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
     setSelectedChannelId(channel.id);
   };
 
+  const selectedChannel = channels.find(c => c.id === selectedChannelId);
+
   return (
     <div className="flex h-screen bg-gray-900">
       <Sidebar
@@ -49,6 +52,22 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-gray-500">Loading...</div>
+          </div>
+        ) : selectedChannelId ? (
+          <div className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              {selectedChannel?.avatar && (
+                <img
+                  src={selectedChannel.avatar}
+                  alt=""
+                  className="w-10 h-10 rounded-full"
+                />
+              )}
+              <h1 className="text-xl font-semibold text-gray-900">
+                {selectedChannel?.displayName || selectedChannel?.name}
+              </h1>
+            </div>
+            <PostPreviewList channelId={selectedChannelId} />
           </div>
         ) : (
           children

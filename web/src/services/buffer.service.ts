@@ -99,19 +99,21 @@ export async function getBufferPosts(
           channelIds: ["${channelId}"]
         }
         sort: {
-          field: "createdAt"
-          direction: "desc"
+          field: createdAt
+          direction: desc
         }
+      },
         ${afterClause}
         first: 3
-      }) {
+      ) {
         edges {
           cursor
           node {
             id
+            text
             dueAt
             status
-            asset {
+            assets {
               id
               mimeType
               source
