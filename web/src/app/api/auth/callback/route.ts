@@ -1,5 +1,6 @@
 import { getBufferAccount } from '@/services/buffer.service';
 import { getBaseUrl } from '@/utils/get-base-url';
+import { extractError } from '@/utils/api-handler';
 import { COOKIE_KEYS } from '@/constants';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
@@ -36,17 +37,23 @@ export async function GET(request: Request) {
         return NextResponse.redirect(new URL('/error?reason=verifier_not_issued', baseUrl));
     }
 
-    const response = await fetch(`${BUFFER_AUTH_ENDPOINT}/token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-            client_id: CLIENT_ID ?? '',
-            grant_type: 'authorization_code',
-            code,
-            redirect_uri: `${baseUrl}/api/auth/callback`,
-            code_verifier: verifier,
-        }),
-    });
+    let response: Response;
+    try {
+        response = await fetch(`${BUFFER_AUTH_ENDPOINT}/token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                client_id: CLIENT_ID ?? '',
+                grant_type: 'authorization_code',
+                code,
+                redirect_uri: `${baseUrl}/api/auth/callback`,
+                code_verifier: verifier,
+            }),
+        });
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown network error';
+        return NextResponse.redirect(new URL(`/error?reason=network_error&description=${encodeURIComponent(message)}`, baseUrl));
+    }
 
     if (response.status != 200) {
         const { error, error_description }: { error: string, error_description: string } = await response.json();
@@ -84,7 +91,8 @@ export async function GET(request: Request) {
     const account = await getBufferAccount();
 
     if (account instanceof Error) {
-        return NextResponse.redirect(new URL('/error?reason=account_fetch_failed', baseUrl));
+        const errorInfo = extractError(account);
+        return NextResponse.redirect(new URL(`/error?reason=${errorInfo.type}&description=${encodeURIComponent(errorInfo.message)}`, baseUrl));
     }
 
     cookieStore.set({

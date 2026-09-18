@@ -4,13 +4,13 @@
 export type BufferErrorCode = 'UNAUTHORIZED' | 'FORBIDDEN' | 'NOT_FOUND' | 'UNEXPECTED' | 'RATE_LIMIT_EXCEEDED';
 
 /**
- * Represents a structure for a Nnn-recoverable errors from buffers API
+ * Represents a structure for a Non-recoverable errors from buffers API
  * non-recoverable errors are system level errors.
  *
  * Examples: UNAUTHORIZED, FORBIDDEN, NOT_FOUND, UNEXPECTED, RATE_LIMIT_EXCEEDED
  */
 export type NonRecoverableError = {
-    message: "Not authorized";
+    message: string;
     path: Array<string>;
     extensions: {
         code: BufferErrorCode;
@@ -39,3 +39,22 @@ export class UnauthorizedError extends Error {
         this.name = 'UnauthorizedError';
     }
 }
+
+/**
+ * Represents a network error when fetch fails due to network issues.
+ */
+export class NetworkError extends Error {
+    constructor(message = 'Network request failed') {
+        super(message);
+        this.name = 'NetworkError';
+    }
+}
+
+/**
+ * Error response structure for frontend consumption.
+ */
+export type ApiErrorResponse = {
+    type: 'unauthorized' | 'network' | 'buffer_api' | 'unknown';
+    message: string;
+    code?: BufferErrorCode;
+};
