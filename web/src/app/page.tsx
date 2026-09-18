@@ -2,9 +2,10 @@
 
 import { getCookie } from '@/utils/get-cookie';
 import { LoginButton } from '@/components/login-button';
+import { COOKIE_KEYS } from '@/constants';
 
 export default function Home() {
-  const cookie = getCookie('authenticated');
+  const cookie = getCookie(COOKIE_KEYS.AUTHENTICATED);
   const isAuthenticated = cookie === 'true';
 
   if (isAuthenticated) {

@@ -4,9 +4,10 @@ import { ChevronDown } from 'lucide-react';
 import { LoginButton } from '@/components/login-button';
 import { getCookie } from '@/utils/get-cookie';
 import { LogoutButton } from './logout-button';
+import { COOKIE_KEYS } from '@/constants';
 
 export default function MainNavbar() {
-    const cookie = getCookie('authenticated');
+    const cookie = getCookie(COOKIE_KEYS.AUTHENTICATED);
     const authenticated = cookie === 'true';
 
     return (

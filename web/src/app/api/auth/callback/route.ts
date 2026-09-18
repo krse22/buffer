@@ -1,5 +1,6 @@
 import { getBufferAccount } from '@/services/buffer.service';
 import { getBaseUrl } from '@/utils/get-base-url';
+import { COOKIE_KEYS } from '@/constants';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -16,8 +17,8 @@ export async function GET(request: Request) {
     const returnedState = url.searchParams.get('state');
 
     const cookieStore = await cookies();
-    const savedState = cookieStore.get('buffer_state')?.value;
-    const verifier = cookieStore.get('buffer_code_verifier')?.value;
+    const savedState = cookieStore.get(COOKIE_KEYS.OAUTH_STATE)?.value;
+    const verifier = cookieStore.get(COOKIE_KEYS.CODE_VERIFIER)?.value;
 
     if (error) {
         return NextResponse.redirect(new URL(`/error?reason=${error}`, baseUrl));
@@ -53,25 +54,20 @@ export async function GET(request: Request) {
     }
 
     const tokensResponse: { access_token: string, refresh_token: string; expires_in: number } = await response.json();
-    const { expires_in, access_token, refresh_token } = tokensResponse;
+    const { access_token, refresh_token } = tokensResponse;
 
-   
-    const account = await getBufferAccount(access_token);
-    console.log('ACCOUNT');
-    console.log(account);
-
+    // Set token cookies FIRST so bufferApi can read them
     cookieStore.set({
-        name: 'buffer_token',
+        name: COOKIE_KEYS.ACCESS_TOKEN,
         value: access_token,
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         path: '/',
-        maxAge: expires_in,
         sameSite: 'lax',
     });
 
     cookieStore.set({
-        name: 'buffer_refresh_token',
+        name: COOKIE_KEYS.REFRESH_TOKEN,
         value: refresh_token,
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -80,8 +76,24 @@ export async function GET(request: Request) {
     });
 
     cookieStore.set({
-        name: 'authenticated',
-        value: 'true'
+        name: COOKIE_KEYS.AUTHENTICATED,
+        value: 'true',
+    });
+
+    // Fetch account details (uses bufferApi which reads from cookies)
+    const account = await getBufferAccount();
+
+    if (account instanceof Error) {
+        return NextResponse.redirect(new URL('/error?reason=account_fetch_failed', baseUrl));
+    }
+
+    cookieStore.set({
+        name: COOKIE_KEYS.ORGANIZATION_ID,
+        value: account.organizations[0].id,
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        sameSite: 'lax',
     });
 
     return NextResponse.redirect(new URL('', baseUrl));
