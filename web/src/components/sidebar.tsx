@@ -26,7 +26,7 @@ export function Sidebar({ channels, selectedChannelId, isLoading }: SidebarProps
   return (
     <aside className="w-72 bg-gray-900 flex flex-col h-full">
       <div className="p-4 border-b border-gray-800">
-        <h1 className="text-xl font-bold text-white">Buffer</h1>
+        <h1 className="text-xl font-bold text-white">Buffer Gaze</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto p-3">

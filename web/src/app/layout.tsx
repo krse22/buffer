@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Buffer App",
+  title: "Buffer Gaze",
   description: "App created to stand amongst other candidates for Buffer.com",
 };
 

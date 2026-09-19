@@ -7,7 +7,7 @@ export default function MainNavbar() {
     return (
         <header className="border-b border-gray-200 bg-white">
             <nav className="mx-auto flex items-center justify-between p-4 text-gray-900">
-                <div><span className="font-bold">HELLO</span>, Buffer :)</div>
+                <div><span className="font-bold">Buffer Gaze</span></div>
                 <NavigationMenu.Root>
                     <NavigationMenu.List className="flex items-center justify-between gap-2">
                         <NavigationMenu.Item>
