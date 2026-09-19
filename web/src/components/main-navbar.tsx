@@ -2,14 +2,8 @@
 import { NavigationMenu } from '@base-ui/react/navigation-menu';
 import { ChevronDown } from 'lucide-react';
 import { LoginButton } from '@/components/login-button';
-import { getCookie } from '@/utils/get-cookie';
-import { LogoutButton } from './logout-button';
-import { COOKIE_KEYS } from '@/constants';
 
 export default function MainNavbar() {
-    const cookie = getCookie(COOKIE_KEYS.AUTHENTICATED);
-    const authenticated = cookie === 'true';
-
     return (
         <header className="border-b border-gray-200 bg-white">
             <nav className="mx-auto flex items-center justify-between p-4 text-gray-900">
@@ -35,13 +29,7 @@ export default function MainNavbar() {
                         </NavigationMenu.Item>
 
                         <NavigationMenu.Item>
-                            {authenticated === false && (
                                 <LoginButton />
-                            )}
-                   
-                            {authenticated === true && (
-                                <LogoutButton />
-                            )}
                         </NavigationMenu.Item>
                     </NavigationMenu.List>
 

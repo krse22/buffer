@@ -86,7 +86,6 @@ async function clearAuthCookies(): Promise<void> {
     cookieStore.delete(COOKIE_KEYS.ACCESS_TOKEN);
     cookieStore.delete(COOKIE_KEYS.REFRESH_TOKEN);
     cookieStore.delete(COOKIE_KEYS.ORGANIZATION_ID);
-    cookieStore.delete(COOKIE_KEYS.AUTHENTICATED);
 }
 
 /**

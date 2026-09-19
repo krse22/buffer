@@ -26,7 +26,6 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
     queryFn: fetchChannels,
   });
 
-  // Extract channelId from URL if on a channel page
   const channelMatch = pathname.match(/^\/channel\/([^/]+)/);
   const selectedChannelId = channelMatch ? channelMatch[1] : null;
 

@@ -57,7 +57,7 @@ export async function GET(request: Request) {
 
     if (response.status != 200) {
         const { error, error_description }: { error: string, error_description: string } = await response.json();
-        return NextResponse.redirect(new URL(`/error?reason=${error}&description=${error_description}`, baseUrl));
+        return NextResponse.redirect(new URL(`/error?reason=${error}&description=${encodeURIComponent(error_description)}`, baseUrl));
     }
 
     const tokensResponse: { access_token: string, refresh_token: string; expires_in: number } = await response.json();
@@ -82,11 +82,6 @@ export async function GET(request: Request) {
         sameSite: 'lax',
     });
 
-    cookieStore.set({
-        name: COOKIE_KEYS.AUTHENTICATED,
-        value: 'true',
-    });
-
     // Fetch account details (uses bufferApi which reads from cookies)
     const account = await getBufferAccount();
 
@@ -104,5 +99,5 @@ export async function GET(request: Request) {
         sameSite: 'lax',
     });
 
-    return NextResponse.redirect(new URL('', baseUrl));
+    return NextResponse.redirect(new URL('/', baseUrl));
 }

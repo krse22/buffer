@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AppShell } from "@/components/app-shell";
 import { Providers } from "@/components/providers";
 
 const geistSans = Geist({
@@ -27,9 +26,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <Providers>
-          <AppShell>
-            {children}
-          </AppShell>
+          {children}
         </Providers>
       </body>
     </html>
